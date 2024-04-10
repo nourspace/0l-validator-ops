@@ -1,46 +1,52 @@
-version: '3'
+version: "3"
 
-vars:
-  # Extracts values from .env file
-  IMAGE:
-    sh: grep -v '^#' .env | grep -e "OL_IMAGE" | sed -e 's/.*=//'
-  REPO:
-    sh: grep -v '^#' .env | grep -e "OL_REPO" | sed -e 's/.*=//'
-  BRANCH:
-    sh: grep -v '^#' .env | grep -e "OL_BRANCH" | sed -e 's/.*=//'
+dotenv: [".env"]
+
+env:
+  COMPOSE_PROJECT_NAME: '0l-{{.OL_ENV}}'  
 
 tasks:
+  checkout:
+    desc: "Checkout libra-framework"
+    cmd: |
+      echo "Checking out '{{.OL_BRANCH}}' from '{{.OL_REPO}}' ..." \
+        && git clone --branch {{.OL_BRANCH}} --depth 1 {{.OL_REPO}} {{.OL_SOURCE_DIR}} \
+        && echo "Commit hash: $(git rev-parse HEAD)"
+    ignore_error: true
+
   docker:build:
     desc: "Build docker images"
+    deps: [checkout]
     cmds:
-      - docker build --build-arg=BRANCH={{.BRANCH}} --build-arg=REPO={{.REPO}} --tag {{.IMAGE}} .
+      - docker build -f Dockerfile --tag {{.OL_IMAGE}} {{.OL_ENV_DIR}}
       - task docker:build:source
       - task docker:build:builder
 
   docker:build:source:
     desc: "Build docker [source] image"
+    deps: [checkout]
     cmds:
-      - docker build --build-arg=BRANCH={{.BRANCH}} --build-arg=REPO={{.REPO}} --tag {{.IMAGE}}-source --target source .
+      - docker build -f Dockerfile --tag {{.OL_IMAGE}}-source --target source {{.OL_ENV_DIR}}
 
   docker:build:builder:
     desc: "Build docker [builder] image"
     cmds:
-      - docker build --build-arg=BRANCH={{.BRANCH}} --build-arg=REPO={{.REPO}} --tag {{.IMAGE}}-builder --target builder .
+      - docker build -f Dockerfile --tag {{.OL_IMAGE}}-builder --target builder {{.OL_ENV_DIR}}
 
   docker:push:
     desc: "Push docker image"
     cmds:
-      - docker push {{.IMAGE}}
+      - docker push {{.OL_IMAGE}}
 
   docker:push:source:
     desc: "Push docker [source] image"
     cmds:
-      - docker push {{.IMAGE}}-source
+      - docker push {{.OL_IMAGE}}-source
 
   docker:push:builder:
     desc: "Push docker [builder] image"
     cmds:
-      - docker push {{.IMAGE}}-builder
+      - docker push {{.OL_IMAGE}}-builder
 
   shell:
     desc: "Start a shell container"
@@ -60,8 +66,17 @@ tasks:
       - docker compose up -d builder
       - docker compose exec builder bash
 
-  clean-utils:
+  clean:utils:
     desc: "Clean utility containers"
     cmds:
       - docker compose stop shell source builder
       - docker compose rm shell source builder
+
+  clean:dirs:
+    desc: "Clean env '{{.OL_ENV}}' directories"
+    vars:
+      OL_ENV_DIRS: "{{.OL_DATA_DIR}} {{.OL_SOURCE_DIR}} {{.OL_RECOVERY_DIR}}"
+    cmds:
+      - rm -rf {{.OL_ENV_DIR}}
+      - for: { var: OL_ENV_DIRS }
+        cmd: mkdir -p {{.ITEM}}

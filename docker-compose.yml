@@ -30,7 +30,7 @@ services:
 
   node:
     <<: *defaults
-    container_name: "0l-${OL_NODE_MODE}"
+    container_name: "0l-${OL_ENV}-${OL_NODE_MODE}"
     command:
       [
         "libra",
@@ -64,17 +64,17 @@ services:
 
   shell:
     <<: *util-defaults
-    container_name: 0l-shell
+    container_name: 0l-${OL_ENV}-shell
 
   source:
     <<: *util-defaults
     image: "${OL_IMAGE}-source"
-    container_name: 0l-source
+    container_name: 0l-${OL_ENV}-source
 
   builder:
     <<: *util-defaults
     image: "${OL_IMAGE}-builder"
-    container_name: 0l-builder
+    container_name: 0l-${OL_ENV}-builder
 
 volumes:
   node_data:

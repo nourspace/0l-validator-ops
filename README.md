@@ -23,6 +23,7 @@ Tooling for operations of https://0l.network
 > These images were built using the [Dockerfile](./Dockerfile) in this repo and come without any guaranties.
 
 - Set these env variables
+  - `OL_ENV`: The name of the environment since these tools can manage multiple environments
   - `OL_REPO`: Repository to use. Defaults to `https://github.com/0LNetworkCommunity/libra-framework.git`. This is useful when building forks.
   - `OL_BRANCH`: Release tag or branch to check out and build
   - `OL_IMAGE`: Docker image (`username/image:tag`), used to build/push images, also to run services

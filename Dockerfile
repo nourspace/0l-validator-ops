@@ -28,6 +28,13 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y
 RUN cargo install toml-cli
 RUN cargo install sccache
 
+# Install tools
+RUN apt-get update -y -q && apt-get install -y -q \
+  jq \
+  netcat \
+  wget \
+  && rm -rf /var/lib/apt/lists/*
+
 
 ##########     Source image      ###########
 ############################################
@@ -41,27 +48,19 @@ ARG BRANCH=main
 ENV SOURCE_PATH="/root/libra-framework" \
   PATH="/root/libra-framework/target/release:${PATH}"
 
+RUN mkdir -p $SOURCE_PATH
 WORKDIR /root/libra-framework
 
-# Fixme(nourspace): depending where these tools are hosted, we might not need to pull
-RUN echo "Checking out '${BRANCH}' from '${REPO}' ..." \
-  && git clone --branch ${BRANCH} --depth 1 ${REPO} ${SOURCE_PATH} \
-  && echo "Commit hash: $(git rev-parse HEAD)"
-
+# Assumes the source code is checked out in directory `libra-framework`
+COPY ./libra-framework .
 
 ##########     Builder image      ##########
 ############################################
 FROM source as builder
 
-# # Build 0L binaries
-# RUN RUSTC_WRAPPER=sccache make bins
-
 # Build the specified Rust packages as release binaries
 RUN cargo build --release \
-     -p libra \
-     -p libra-genesis-tools \
-     -p libra-txs \
-     -p diem-db-tool
+     -p libra
 
 
 ##########   Production image     ##########
@@ -86,9 +85,6 @@ RUN apt-get update && apt-get install -y \
 # Copy binaries from builder
 COPY --from=builder [ \
   "${SOURCE_PATH}/target/release/libra", \
-  "${SOURCE_PATH}/target/release/libra-genesis-tools", \
-  "${SOURCE_PATH}/target/release/libra-txs", \
-  "${SOURCE_PATH}/target/release/diem-db-tool", \
   "${SOURCE_PATH}/target/release/" \
 ]
 
