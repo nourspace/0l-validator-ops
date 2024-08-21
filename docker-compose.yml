@@ -24,7 +24,6 @@ x-util-defaults: &util-defaults
 
 ###########################################
 
-version: "3.8"
 services:
   ##########  Main services   #############
 
@@ -36,7 +35,7 @@ services:
         "libra",
         "node",
         "--config-path",
-        "/root/.libra/validator.yaml"
+        "/root/.libra/${OL_NODE_MODE}.yaml"
       ]
     ports:
       - "6180:6180"

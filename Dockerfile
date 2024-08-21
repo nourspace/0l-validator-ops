@@ -59,8 +59,7 @@ COPY ./libra-framework .
 FROM source as builder
 
 # Build the specified Rust packages as release binaries
-RUN cargo build --release \
-     -p libra
+RUN cargo build --release -p libra --locked
 
 
 ##########   Production image     ##########
